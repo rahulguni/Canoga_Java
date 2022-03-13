@@ -1,4 +1,4 @@
-package com.example.canoga;
+package com.example.canoga.Activity;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -7,15 +7,16 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.InputType;
-import android.util.Log;
 import android.view.View;
-import android.widget.Adapter;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import com.example.canoga.Model.Game;
+import com.example.canoga.R;
 
 public class MainActivity extends AppCompatActivity {
     Button startGame, resumeGame;
@@ -47,9 +48,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void startNewGame(int players) {
         final Dialog dialog = new Dialog(this);
-        dialog.setTitle("Start A New Game");
         dialog.setCancelable(true);
         dialog.setContentView(R.layout.start_game_dialog);
+
+        Intent intent = new Intent(this, BoardView.class);
+        Bundle bundle = new Bundle();
 
         //Initializing the views of the dialog
         final TextView boardSizeTextView = dialog.findViewById(R.id.board_size_text_id);
@@ -72,10 +75,11 @@ public class MainActivity extends AppCompatActivity {
         beginGameBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Game newGame = new Game(player1Name.getText().toString(),
-                        player2Name.getText().toString(),
-                        boardSizeSpinner.getSelectedItemPosition() + 9);
-                newGame.startGame();
+                bundle.putString("player1Name", player1Name.getText().toString());
+                bundle.putString("player2Name", player2Name.getText().toString());
+                bundle.putString("boardSize", String.valueOf(boardSizeSpinner.getSelectedItemPosition() + 9));
+                intent.putExtras(bundle);
+                startActivity(intent);
             }
         });
 
