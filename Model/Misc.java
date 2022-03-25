@@ -30,4 +30,31 @@ public class Misc {
         return true;
     }
 
+    public boolean playerIsComputer(Player player) {
+        if(player.getName().equals("Computer")) {
+            return true;
+        }
+        return false;
+    }
+
+    public String getOpponent(Game game, Player player) {
+        String opponent;
+        if(game.getPlayer1().getName().equals(player.getName())) {
+            opponent = game.getPlayer2().getName();
+        }
+        else {
+            opponent = game.getPlayer1().getName();
+        }
+        return opponent;
+    }
+
+    public Player switchPlayer(Game game, Player player) {
+        if(player.equals(game.getPlayer1())) {
+            return game.getPlayer2();
+        }
+        else {
+            return game.getPlayer1();
+        }
+    }
+
 }

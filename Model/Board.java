@@ -1,5 +1,7 @@
 package com.example.canoga.Model;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 public class Board {
@@ -12,6 +14,7 @@ public class Board {
         this.humanBoard = new ArrayList<>(boardSize);
         this.computerBoard = new ArrayList<>(boardSize);
         this.firstPlay = true;
+        this.humanTurn = true;
 
         for(int i = 0; i < boardSize; i++) {
             this.humanBoard.add(false);
@@ -73,13 +76,21 @@ public class Board {
         }
     }
 
-    public void changeTile(boolean humanBoard, int square, boolean cover) {
-        if(humanBoard) {
-            this.humanBoard.set(square, cover);
+    public void changeTile(ArrayList<Boolean> currBoard, int square, boolean cover) {
+        currBoard.set(square, cover);
+    }
+
+    @Override
+    public String toString() {
+        String boardData = "Player Board: ";
+        for(int i = 0; i < this.boardSize; i++) {
+            boardData += String.valueOf(i) + String.valueOf(this.humanBoard.get(i));
         }
-        else {
-            this.computerBoard.set(square, cover);
+        boardData += "  Computer Board: ";
+        for(int i = 0; i < this.boardSize; i++) {
+            boardData += String.valueOf(i) + String.valueOf(this.computerBoard.get(i));
         }
+        return boardData;
     }
 }
 

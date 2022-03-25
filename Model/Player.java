@@ -1,15 +1,22 @@
 package com.example.canoga.Model;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Random;
 
 public abstract class Player {
     private int score = 0;
     private boolean coverChoice;
-    ArrayList<ArrayList<Integer>> possibleTiles;
+    ArrayList<ArrayList<Integer>> possibleTiles = new ArrayList<>();
     private Misc misc = new Misc();
 
     public Player() {
+    }
+
+    @Override
+    public String toString() {
+        return this.getName() + ": " + String.valueOf(this.score);
     }
 
     public void updateScore(int score) {
@@ -24,12 +31,16 @@ public abstract class Player {
         return score;
     }
 
-    public boolean isCoverChoice() {
+    public boolean getCoverChoice() {
         return coverChoice;
     }
 
     public ArrayList<ArrayList<Integer>> getPossibleTiles() {
         return possibleTiles;
+    }
+
+    public void setPossibleTiles(ArrayList<ArrayList<Integer>> possibleTiles) {
+        this.possibleTiles = possibleTiles;
     }
 
     public ArrayList<Integer> rollDice(Board board) {
@@ -55,7 +66,7 @@ public abstract class Player {
         return diceSum;
     }
 
-    void getAllCombinations(int arr[], int rolledDice, int index, int reducedSum) {
+    public void getAllCombinations(int arr[], int rolledDice, int index, int reducedSum) {
         //Arraylist to store all moves available temporarily before filtering for duplicates.
         ArrayList<Integer> currMoves = new ArrayList<>();
         //Base Condition
@@ -64,7 +75,7 @@ public abstract class Player {
         //If combination is found, store it in currMove
         if(reducedSum == 0) {
             for(int i = 0; i < index; i++) {
-                currMoves.set(i, (arr[i]));
+                currMoves.add(arr[i]);
             }
             //Filter the combinations by checking for duplicates, only push back combinations with unique elements.
             if(misc.checkDuplicateCombinations(currMoves)) {
@@ -103,14 +114,18 @@ public abstract class Player {
         //Filter combination of dice rolls for current board
         for(int i = possibleTiles.size() - 1; i >= 0; i--) {
             for(int j = 0; j < possibleTiles.get(i).size(); j++) {
-                //Erase all the covered/uncovered tile from the vector
-                if(currBoard.get(possibleTiles.get(i).get(j) - 1) != !toCover) {
+                //Erase numbers in the combination that exceeds the board size
+                if(possibleTiles.get(i).get(j) > boardSize) {
                     possibleTiles.remove(i);
                     break;
                 }
+            }
+        }
 
-                //Erase numbers in the combination that exceeds the board size
-                if(possibleTiles.get(i).get(j) > boardSize) {
+        for(int i = possibleTiles.size() - 1; i >= 0; i--) {
+            for (int j = 0; j < possibleTiles.get(i).size(); j++) {
+                //Erase all the covered/uncovered tile from the vector
+                if(currBoard.get(possibleTiles.get(i).get(j) - 1) != !toCover) {
                     possibleTiles.remove(i);
                     break;
                 }
@@ -122,6 +137,10 @@ public abstract class Player {
 
 
     public abstract boolean oneDicePossible(Board board);
+    public abstract boolean checkForMove(Board board, int diceSum);
+    public abstract int makeMove(Board board, boolean coverSelf, int diceSum, int tile);
+    public abstract int coverSelf(Board board, int diceSum);
+    public abstract int uncoverOpp(Board board, int diceSum);
 
     public abstract String getName();
 }
