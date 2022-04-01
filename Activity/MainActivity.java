@@ -7,6 +7,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.AdapterView;
@@ -17,6 +18,8 @@ import android.widget.TextView;
 
 import com.example.canoga.Model.Game;
 import com.example.canoga.R;
+
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
     Button startGame, resumeGame;
@@ -43,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void resumeGameOptions(View v) {
-
+        Log.d("Files", this.getFilesDir().toString());
     }
 
     private void startNewGame(int players) {
@@ -78,6 +81,7 @@ public class MainActivity extends AppCompatActivity {
                 bundle.putString("player1Name", player1Name.getText().toString());
                 bundle.putString("player2Name", player2Name.getText().toString());
                 bundle.putString("boardSize", String.valueOf(boardSizeSpinner.getSelectedItemPosition() + 9));
+                bundle.putString("gameMode", "newGame");
                 intent.putExtras(bundle);
                 startActivity(intent);
             }
@@ -91,8 +95,5 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void resumeGame() {
-
-    }
 
 }

@@ -5,7 +5,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.canoga.Adapters.BoardCustomAdapter;
 import com.example.canoga.Model.Board;
+import com.example.canoga.Model.Computer;
 import com.example.canoga.Model.Game;
 import com.example.canoga.Model.Misc;
 import com.example.canoga.Model.Player;
@@ -29,7 +30,7 @@ import java.util.ArrayList;
 public class BoardView extends AppCompatActivity implements BoardCustomAdapter.OnTileClickListener {
     private TextView player1info, player2info, gameInfo;
     private RecyclerView humanBoard, computerBoard;
-    private Button rollDiceBtn, helpBtn, viewMovesBtn, startNewGameBtn;
+    private Button rollDiceBtn, helpBtn, viewMovesBtn, startNewGameBtn, saveGameBtn;
     private ImageView dice1, dice2, player1GoesFirstSign, player1TurnSign, player2GoesFirstSign, player2TurnSign;
     private BoardCustomAdapter humanBoardAdapter, computerBoardAdapter;
     private Game game;
@@ -54,14 +55,19 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         String player1Name = getIntent().getExtras().getString("player1Name");
         String player2Name = getIntent().getExtras().getString("player2Name");
         int boardSize = Integer.valueOf(getIntent().getExtras().getString("boardSize"));
-        game = new Game(player1Name, player2Name, boardSize);
+        if(getIntent().getExtras().get("gameMode").equals("newGame")) {
+            game = new Game(player1Name, player2Name, boardSize);
+        }
+        else {
+            game = new Game(getIntent().getExtras().getString("fileName"));
+        }
         board = game.getNewBoard();
     }
 
     void fillBoardDetails() {
         player1info.setText(game.getPlayer1().getName() + ":  " + String.valueOf(game.getPlayer1().getScore()));
         player2info.setText(game.getPlayer2().getName() + ":  " + String.valueOf(game.getPlayer2().getScore()));
-        gameInfo.setText("Press Start!");
+        this.fillGameInfo("Press Start!");
     }
 
     public void startNewGame(View v) {
@@ -69,14 +75,14 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         boolean gameBegin = false;
 
         if(this.startNewGameBtn.getText().equals("Start")) {
-            ArrayList<Integer> diceSum = this.game.getPlayer1().rollDice(board);
+            ArrayList<Integer> diceSum = this.game.getPlayer1().rollDice(true);
             this.viewDice(diceSum);
             currDiceRoll = misc.getDiceRollSum(diceSum);
             displayDiceRoll(this.game.getPlayer1().getName(), misc.getDiceRollSum(diceSum));
             this.startNewGameBtn.setText("Continue");
         }
         else if(this.startNewGameBtn.getText().equals("Continue")) {
-            ArrayList<Integer> diceSum = this.game.getPlayer2().rollDice(board);
+            ArrayList<Integer> diceSum = this.game.getPlayer2().rollDice(true);
             this.viewDice(diceSum);
             displayDiceRoll(this.game.getPlayer2().getName(), misc.getDiceRollSum(diceSum));
             int anotherDice = misc.getDiceRollSum(diceSum);
@@ -94,14 +100,14 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
                 this.currDiceRoll = anotherDice;
             }
             else {
-                this.gameInfo.setText(this.gameInfo.getText() + "\nBoth players rolled same dice sum\nStart over again!");
+                this.fillGameInfo(this.gameInfo.getText() + "\nBoth players rolled same dice sum\nStart over again!");
                 this.startNewGameBtn.setText("Start");
                 gameBegin = false;
             }
         }
         else if(this.startNewGameBtn.getText().equals("Start Game")) {
             gameBegin = true;
-            this.gameInfo.setText("Since " + this.currPlayer.getName() + " had a combined dice sum of " + this.currDiceRoll + ", " + this.currPlayer.getName() + " goes first!");
+            this.fillGameInfo("Since " + this.currPlayer.getName() + " had a combined dice sum of " + this.currDiceRoll + ", " + this.currPlayer.getName() + " goes first!");
         }
 
         if(gameBegin) {
@@ -128,15 +134,11 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
                 if(this.currDiceRoll == 0) {
                     String gameInfoText = this.gameInfo.getText().toString();
                     gameInfoText += "Roll Again!";
-                    this.gameInfo.setText(gameInfoText);
+                    this.fillGameInfo(gameInfoText);
                     restrictBoardAfterChoice(true);
                     this.rollDiceBtn.setEnabled(true);
                     this.rollDiceBtn.setText("Roll Dice");
-                    if(this.game.gameOver()) {
-                        restrictBoardAfterChoice(true);
-                        gameInfo.setText("Round over. Click on Wrap Up Button to view scores and other options!");
-                        rollDiceBtn.setText("Wrap Up");
-                    }
+                    checkGameOver();
                 }
             }
             else {
@@ -146,21 +148,27 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         }
     }
 
+    private void checkGameOver() {
+        if(this.game.gameOver()) {
+            restrictBoardAfterChoice(true);
+            fillGameInfo("Round over. Click on Wrap Up Button to view scores and other options!");
+            rollDiceBtn.setText("Wrap Up");
+        }
+    }
+
 
     public void helpButtonClick(View v) {
-        if(!misc.playerIsComputer(this.currPlayer)) {
-
+        if(!(this.currPlayer instanceof Computer)) {
+            this.displayHelp(false);
         }
         else {
-            Toast toast = new Toast(this);
-            toast.setText("Help mode not available for Computer.");
-            toast.show();
+            this.displayHelp(true);
         }
     }
 
     public void viewMovesButtonClick(View v) {
-        if(!misc.playerIsComputer(this.currPlayer)) {
-
+        if(!(this.currPlayer instanceof Computer)) {
+            this.displayNextMoves();
         }
         else {
             Toast toast = new Toast(this);
@@ -171,63 +179,119 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
 
     public void rollDice(View v) {
         if(this.rollDiceBtn.getText().equals("Roll Dice")) {
-            this.gameInfo.setText("Rolling dice for " + currPlayer.getName());
-            ArrayList<Integer> currDiceCombo = this.currPlayer.rollDice(this.board);
-            this.viewDice(currDiceCombo);
-            enableHelpButtons(true, false);
-            this.currDiceRoll = misc.getDiceRollSum(currDiceCombo);
-            this.displayDiceRoll(currPlayer.getName(), this.currDiceRoll);
-            if(this.currPlayer.checkForMove(this.board, this.currDiceRoll)) {
-                this.rollDiceBtn.setText("Make Move");
-            }
-            else {
-                this.gameInfo.setText(this.currPlayer.getName() + " has no more moves for current dice roll. It is " +
-                        misc.getOpponent(this.game, this.currPlayer) + "'s turn!");
-                this.currPlayer = misc.switchPlayer(this.game, this.currPlayer);
-                this.displayTurns();
-            }
+            rollDice();
         }
         else if(this.rollDiceBtn.getText().equals("Make Move")) {
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-            alert.setTitle("Next Move");
-            alert.setMessage("Choose if you want to cover your own tiles or uncover " + misc.getOpponent(this.game, this.currPlayer)
-            + "'s tiles.");
-            alert.setPositiveButton("Cover", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    currPlayer.setCoverChoice(true);
-                    if(currPlayer.coverSelf(board, currDiceRoll) > 0) {
-                        nextMoveMade(true);
-                    }
-                    else {
-                        displayNoMove();
-                    }
-                }
-            });
-            alert.setNegativeButton("Uncover", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    currPlayer.setCoverChoice(false);
-                    if(currPlayer.uncoverOpp(board, currDiceRoll) > 0) {
-                        nextMoveMade(false);
-                    }
-                    else {
-                        displayNoMove();
-                    }
-                }
-            });
+            if(this.currPlayer instanceof Computer) {
+                this.enableHelpButtons(false, false);
+                this.rollDiceBtn.setText("Roll Dice");
+                this.currPlayer.makeMove(this.board, this.currPlayer.getCoverChoice(), this.currDiceRoll, 0);
 
-            AlertDialog alertDialog = alert.create();
-            alertDialog.setCancelable(false);
-            alertDialog.show();
+                if(!this.game.gameOver()) {
+                    humanBoardAdapter.notifyDataSetChanged();
+                    computerBoardAdapter.notifyDataSetChanged();
+                }
+                else {
+                    checkGameOver();
+                }
+            }
+            else {
+                AlertDialog.Builder alert = new AlertDialog.Builder(this);
+                alert.setTitle("Next Move");
+                alert.setMessage("Choose if you want to cover your own tiles or uncover " + misc.getOpponent(this.game, this.currPlayer)
+                        + "'s tiles.");
+                alert.setPositiveButton("Cover", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        currPlayer.setCoverChoice(true);
+                        if(currPlayer.coverSelf(board, currDiceRoll) > 0) {
+                            nextMoveMade(true);
+                        }
+                        else {
+                            displayNoMove();
+                        }
+                    }
+                });
+                alert.setNegativeButton("Uncover", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        currPlayer.setCoverChoice(false);
+                        if(currPlayer.uncoverOpp(board, currDiceRoll) > 0) {
+                            nextMoveMade(false);
+                        }
+                        else {
+                            displayNoMove();
+                        }
+                    }
+                });
 
-            Button button = alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-            if(this.board.isFirstPlay()) {
-                button.setEnabled(false);
+                AlertDialog alertDialog = alert.create();
+                alertDialog.setCancelable(false);
+                alertDialog.show();
+
+                Button button = alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+                if(this.board.isFirstPlay()) {
+                    button.setEnabled(false);
+                }
             }
         }
         else if(this.rollDiceBtn.getText().equals("Wrap Up")) {
             roundOverNotification();
+        }
+    }
+
+    private void rollDice() {
+        this.fillGameInfo("Rolling dice for " + currPlayer.getName());
+        if(this.currPlayer instanceof Computer) {
+            ArrayList<Integer> currDiceCombo = this.currPlayer.rollDice(!this.currPlayer.oneDicePossible(this.board));
+            rollDiceHelper(currDiceCombo);
+            this.helpBtn.setText("Computer Steps");
+        }
+        else {
+            if(this.currPlayer.oneDicePossible(this.board)) {
+                AlertDialog.Builder alert = new AlertDialog.Builder(this);
+                alert.setTitle("One Dice Roll");
+                alert.setMessage("You have the option to roll only one die. Do you want to roll only one dice?");
+                alert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        ArrayList<Integer> currDiceCombo = currPlayer.rollDice(false);
+                        rollDiceHelper(currDiceCombo);
+                    }
+                });
+                alert.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        ArrayList<Integer> currDiceCombo = currPlayer.rollDice(true);
+                        rollDiceHelper(currDiceCombo);
+                    }
+                });
+
+                AlertDialog alertDialog = alert.create();
+                alertDialog.setCancelable(false);
+                alertDialog.show();
+            }
+            else {
+                ArrayList<Integer> currDiceCombo = currPlayer.rollDice(true);
+                rollDiceHelper(currDiceCombo);
+            }
+            this.helpBtn.setText("Help");
+        }
+    }
+
+    private void rollDiceHelper(ArrayList<Integer> currDiceCombo) {
+        this.viewDice(currDiceCombo);
+        enableHelpButtons(true, false);
+        this.currDiceRoll = misc.getDiceRollSum(currDiceCombo);
+        this.displayDiceRoll(currPlayer.getName(), this.currDiceRoll);
+        if(this.currPlayer.checkForMove(this.board, this.currDiceRoll)) {
+            this.rollDiceBtn.setText("Make Move");
+        }
+        else {
+            this.fillGameInfo(this.currPlayer.getName() + " has no more moves for current dice roll. It is " +
+                    misc.getOpponent(this.game, this.currPlayer) + "'s turn!");
+            this.currPlayer = misc.switchPlayer(this.game, this.currPlayer);
+            this.displayTurns();
         }
     }
 
@@ -236,10 +300,10 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         this.rollDiceBtn.setEnabled(false);
         enableHelpButtons(true, true);
         if(coverChoice) {
-            this.gameInfo.setText("Click on your tiles to cover!");
+            this.fillGameInfo("Click on your tiles to cover!");
         }
         else {
-            this.gameInfo.setText("Click on " + misc.getOpponent(this.game, this.currPlayer) + "'s tiles to uncover");
+            this.fillGameInfo("Click on " + misc.getOpponent(this.game, this.currPlayer) + "'s tiles to uncover");
         }
         restrictBoardAfterChoice(false);
     }
@@ -277,11 +341,29 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         continueGameBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                gameInfo.setText(game.continueGame(roundScore, board.getBoardSize()));
+                humanBoardAdapter.notifyDataSetChanged();
+                computerBoardAdapter.notifyDataSetChanged();
+                dialog.cancel();
+                resetButtonsForNewGame();
             }
         });
 
         dialog.show();
+    }
+
+    private void resetButtonsForNewGame() {
+        rollDiceBtn.setVisibility(View.INVISIBLE);
+        startNewGameBtn.setVisibility(View.VISIBLE);
+        startNewGameBtn.setText("Start");
+        helpBtn.setVisibility(View.INVISIBLE);
+        viewMovesBtn.setVisibility(View.INVISIBLE);
+        startNewGameBtn.setEnabled(true);
+        rollDiceBtn.setText("Roll Dice");
+        this.player1TurnSign.setVisibility(View.INVISIBLE);
+        this.player1GoesFirstSign.setVisibility(View.INVISIBLE);
+        this.player2TurnSign.setVisibility(View.INVISIBLE);
+        this.player2GoesFirstSign.setVisibility(View.INVISIBLE);
     }
 
     private void setFields() {
@@ -301,7 +383,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         rollDiceBtn = findViewById(R.id.roll_dice_btn_id);
         helpBtn = findViewById(R.id.help_btn_id);
         viewMovesBtn = findViewById(R.id.view_moves_btn_id);
-        startNewGameBtn = findViewById(R.id.start_new_game_btn);
+        startNewGameBtn = findViewById(R.id.save_game_btn);
         humanBoardAdapter = new BoardCustomAdapter(this, board.getHumanBoard(), this);
         humanBoard.setAdapter(humanBoardAdapter);
         humanBoard.setLayoutManager(new LinearLayoutManager(this));
@@ -309,6 +391,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         computerBoard.setAdapter(computerBoardAdapter);
         computerBoard.setLayoutManager(new LinearLayoutManager(this));
         enableHelpButtons(false, false);
+        gameInfo.setMovementMethod(new ScrollingMovementMethod());
     }
 
     private void viewDice(ArrayList<Integer> dice) {
@@ -323,7 +406,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
     }
 
     private void displayDiceRoll(String playerName, int diceRoll) {
-        gameInfo.setText("Rolling dice for " + playerName + "\n" + playerName + " rolled " + diceRoll);
+        fillGameInfo("Rolling dice for " + playerName + "\n" + playerName + " rolled " + diceRoll);
     }
 
     private void restrictBoardAfterChoice(boolean reset) {
@@ -369,7 +452,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
     }
 
     private void displayTileState( int pos) {
-        this.gameInfo.setText(((this.currPlayer.getCoverChoice()) ? this.currPlayer.getName() : misc.getOpponent(this.game, this.currPlayer)) + "'s " + pos + " tile has been " +
+        this.fillGameInfo(((this.currPlayer.getCoverChoice()) ? this.currPlayer.getName() : misc.getOpponent(this.game, this.currPlayer)) + "'s " + pos + " tile has been " +
                 ((this.currPlayer.getCoverChoice()) ? "covered. " : "uncovered. "));
     }
 
@@ -414,12 +497,50 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
                 public void onClick(DialogInterface dialogInterface, int i) {
                     Intent intent = new Intent(builder.getContext(), MainActivity.class);
                     startActivity(intent);
+                    finish();
                 }
             });
         }
         builder.setMessage(message);
         AlertDialog dialog = builder.create();
         dialog.show();
+    }
+
+    private void displayNextMoves() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Available moves\n");
+        builder.setMessage(misc.getMoves(this.currPlayer.getPossibleTiles()));
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void displayHelp(boolean forComputer) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        Computer computer = new Computer();
+        if(!forComputer) {
+            builder.setTitle("Help Mode\n");
+            builder.setMessage(computer.askHelp(this.board, this.currDiceRoll, false, false));
+        }
+        else {
+            builder.setTitle("Computer Move\n");
+            builder.setMessage(computer.askHelp(this.board, this.currDiceRoll, true, false));
+        }
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void fillGameInfo(String gameInfo) {
+        this.gameInfo.setText(gameInfo);
+        this.gameInfo.scrollTo(0, 0);
+    }
+
+    public void saveGameClicked(View v) {
+        if(!this.board.getSavedGameName().equals("Null00")) {
+
+        }
+        else {
+            this.currPlayer.saveCurrentGame(this, this.board, this.currPlayer, misc.get);
+        }
     }
 
 }

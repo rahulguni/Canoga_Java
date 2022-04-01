@@ -1,7 +1,9 @@
 package com.example.canoga.Model;
 
-import android.util.Log;
-
+import android.content.Context;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -9,7 +11,7 @@ public abstract class Player {
     private int score = 0;
     private boolean coverChoice;
     ArrayList<ArrayList<Integer>> possibleTiles = new ArrayList<>();
-    private Misc misc = new Misc();
+    public Misc misc = new Misc();
 
     public Player() {
     }
@@ -43,12 +45,8 @@ public abstract class Player {
         this.possibleTiles = possibleTiles;
     }
 
-    public ArrayList<Integer> rollDice(Board board) {
+    public ArrayList<Integer> rollDice(boolean twoDice) {
         ArrayList<Integer> diceSum = new ArrayList<>();
-
-        boolean twoDice = true;
-        //Check if one die roll is possible in the current board. If yes, let human choose if they want to roll only one die.
-        twoDice = !oneDicePossible(board);
 
         int diceOne, diceTwo;
 
@@ -133,6 +131,50 @@ public abstract class Player {
         }
 
         return this.possibleTiles;
+    }
+
+    public void saveCurrentGame(Context context, Board board, Player player1, Player player2, String fileName) throws IOException {
+        String gameName;
+        String gameInfo = "";
+
+        if(!board.getSavedGameName().equals("Null00")) {
+            gameName = board.getSavedGameName();
+        }
+        else {
+            gameName = fileName;
+            board.setSavedGameName(fileName);
+        }
+
+        gameName += ".txt";
+
+        gameInfo = player2.getName() + ":\n\tSquares: " + board.getBoardForSave(false) +
+                "\n\tScore: " + player2.getScore() + "\n\n" + player1.getName() +  ":\n\tSquares: "
+                + board.getBoardForSave(true) + "\n\tScore: " + player1.getScore();
+        gameInfo += (board.isFirstPlay() ? "\n\nfirst Turn: " : "\n\nFirst Turn: ") +
+                (board.isHumanGoesFirst() ? player1.getName() : player2.getName());
+        gameInfo += "\nNext Turn: " + (board.isHumanTurn() ? player1.getName() : player2.getName()) + "\n";
+
+        if(board.getDiceCombinations().size() >= 2) {
+            gameInfo += "\nDice: \n";
+            for(int i = 0; i < board.getDiceCombinations().size(); i = i + 2) {
+                gameInfo += " " + board.getDiceCombinations().get(i) + " " + board.getDiceCombinations().get(i + 1) + "\n";
+            }
+        }
+
+        File file = new File(context.getFilesDir(), "savedGames");
+        if(!file.exists()) {
+            file.mkdir();
+        }
+        try {
+            File saveFile = new File(file, gameName);
+            FileWriter writer = new FileWriter(saveFile);
+            writer.append(gameInfo);
+            writer.flush();
+            writer.close();
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 

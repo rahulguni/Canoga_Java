@@ -4,6 +4,7 @@ public class Game {
     private Player player1, player2;
     private Board newBoard;
     private Round newRound;
+    private Misc misc;
 
     public Game(String player1, String player2, int boardSize) {
         this.player1 = new Human(player1);
@@ -15,6 +16,12 @@ public class Game {
         }
         this.newBoard = new Board(boardSize);
         this.newRound = new Round();
+        this.misc = new Misc();
+    }
+
+    public Game(String fileName) {
+        String path = "/data/user/0/com.example.canoga/files/savedGames/" + fileName;
+        String gameData = "" ;
     }
 
     @Override
@@ -34,6 +41,42 @@ public class Game {
         return gameOver;
     }
 
+    public String continueGame(int currScore, int boardSize) {
+        //Bool variable to declare whether if player or computer is the handicap
+        String handicapInfo = "";
+        boolean forPlayer = false;
+
+        //Start another Round
+        int squareToCover = misc.getHandicapSquare(boardSize, currScore);
+
+        //Check handicap First
+        if(squareToCover > 0) {
+            String firstTurn, handicap;
+
+            //If human went first this round, computer is the handicap and vice versa.
+            if(this.newBoard.isHumanGoesFirst()) {
+                forPlayer = false;
+                firstTurn = player1.getName();
+                handicap = player2.getName();
+            }
+            else {
+                forPlayer = true;
+                firstTurn = player2.getName();
+                handicap = player1.getName();
+            }
+
+            handicapInfo += "Since " + firstTurn + " went first this round, " + handicap + " has an advantage for next round.\n";
+            handicapInfo += handicap + "'s tile " + squareToCover + " will be automatically covered from the beginning of next round.\n";
+        }
+        else {
+            handicapInfo += "Since last round was a draw, there is no handicap for this round.\n";
+        }
+
+        this.newBoard.resetBoardForHandicap(boardSize, forPlayer, squareToCover);
+        handicapInfo += "Press Start to continue Game.\n";
+        return handicapInfo;
+    }
+
     public Board getNewBoard() {
         return newBoard;
     }
@@ -48,10 +91,6 @@ public class Game {
 
     public Round getNewRound() {
         return newRound;
-    }
-
-    public void setNewRound(Round newRound) {
-        this.newRound = newRound;
     }
 
     public Player getWinner() {
