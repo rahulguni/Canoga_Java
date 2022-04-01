@@ -54,7 +54,10 @@ public class Misc {
     }
 
     public Player getOpponentPlayer(Game game, Player player) {
-
+        if(game.getPlayer1().getName().equals(player.getName())) {
+            return game.getPlayer2();
+        }
+        return game.getPlayer1();
     }
 
     public Player switchPlayer(Game game, Player player) {
@@ -140,6 +143,10 @@ public class Misc {
         }
 
         return dice;
+    }
+
+    public String extractGameName(String gameName) {
+        return gameName.substring(0, gameName.length() - 4);
     }
 
 }

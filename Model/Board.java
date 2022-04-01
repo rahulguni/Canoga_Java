@@ -18,7 +18,7 @@ public class Board {
         this.firstPlay = true;
         this.humanTurn = true;
         this.diceCombinations = new ArrayList<>();
-        this.savedGameName = "Null00";
+        this.savedGameName = "Test";
 
        refreshBoard(this.boardSize);
 

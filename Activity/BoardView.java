@@ -6,12 +6,16 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -25,12 +29,13 @@ import com.example.canoga.Model.Misc;
 import com.example.canoga.Model.Player;
 import com.example.canoga.R;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class BoardView extends AppCompatActivity implements BoardCustomAdapter.OnTileClickListener {
     private TextView player1info, player2info, gameInfo;
     private RecyclerView humanBoard, computerBoard;
-    private Button rollDiceBtn, helpBtn, viewMovesBtn, startNewGameBtn, saveGameBtn;
+    private Button rollDiceBtn, helpBtn, viewMovesBtn, startNewGameBtn;
     private ImageView dice1, dice2, player1GoesFirstSign, player1TurnSign, player2GoesFirstSign, player2TurnSign;
     private BoardCustomAdapter humanBoardAdapter, computerBoardAdapter;
     private Game game;
@@ -38,6 +43,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
     private Player currPlayer;
     private Misc misc = new Misc();
     private int currDiceRoll;
+    private MenuItem menuItem;
     private int[] allDice = new int[]{R.drawable.dice0, R.drawable.dice1, R.drawable.dice2, R.drawable.dice3,
             R.drawable.dice4,
             R.drawable.dice5, R.drawable.dice6};
@@ -49,6 +55,24 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         loadNewGame();
         setFields();
         fillBoardDetails();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.action_bar_game, menu);
+        menuItem = menu.getItem(0);
+        menuItem.setEnabled(false);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        try {
+            saveGameClicked();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     void loadNewGame() {
@@ -139,6 +163,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
                     this.rollDiceBtn.setEnabled(true);
                     this.rollDiceBtn.setText("Roll Dice");
                     checkGameOver();
+                    this.menuItem.setEnabled(true);
                 }
             }
             else {
@@ -179,6 +204,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
 
     public void rollDice(View v) {
         if(this.rollDiceBtn.getText().equals("Roll Dice")) {
+            this.menuItem.setEnabled(false);
             rollDice();
         }
         else if(this.rollDiceBtn.getText().equals("Make Move")) {
@@ -194,6 +220,8 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
                 else {
                     checkGameOver();
                 }
+
+                this.menuItem.setEnabled(true);
             }
             else {
                 AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -383,7 +411,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         rollDiceBtn = findViewById(R.id.roll_dice_btn_id);
         helpBtn = findViewById(R.id.help_btn_id);
         viewMovesBtn = findViewById(R.id.view_moves_btn_id);
-        startNewGameBtn = findViewById(R.id.save_game_btn);
+        startNewGameBtn = findViewById(R.id.start_new_game_btn);
         humanBoardAdapter = new BoardCustomAdapter(this, board.getHumanBoard(), this);
         humanBoard.setAdapter(humanBoardAdapter);
         humanBoard.setLayoutManager(new LinearLayoutManager(this));
@@ -534,12 +562,12 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         this.gameInfo.scrollTo(0, 0);
     }
 
-    public void saveGameClicked(View v) {
-        if(!this.board.getSavedGameName().equals("Null00")) {
+    public void saveGameClicked() throws IOException {
+        if(this.board.getSavedGameName().equals("Null00")) {
 
         }
         else {
-            this.currPlayer.saveCurrentGame(this, this.board, this.currPlayer, misc.get);
+            this.currPlayer.saveCurrentGame(this, this.board, this.currPlayer, misc.getOpponentPlayer(this.game, this.currPlayer), board.getSavedGameName());
         }
     }
 

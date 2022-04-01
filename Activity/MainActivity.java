@@ -2,6 +2,8 @@ package com.example.canoga.Activity;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -16,13 +18,20 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.example.canoga.Adapters.SavedGamesAdapter;
 import com.example.canoga.Model.Game;
+import com.example.canoga.Model.Misc;
 import com.example.canoga.R;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SavedGamesAdapter.OnSaveGameClickListener {
     Button startGame, resumeGame;
+    ArrayList<String> savedGames = new ArrayList<>();
+    Misc misc = new Misc();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +55,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void resumeGameOptions(View v) {
-        Log.d("Files", this.getFilesDir().toString());
+        File file = new File(String.valueOf(this.getFilesDir()) + "/savedGames");
+        String[] savedFiles;
+        savedFiles = file.list();
+
+        for(int i = 0; i < savedFiles.length; i++) {
+            this.savedGames.add(misc.extractGameName(savedFiles[i]));
+        }
+
+        final Dialog dialog = new Dialog(this);
+        dialog.setCancelable(true);
+        dialog.setContentView(R.layout.load_game_dialog);
+
+        final RecyclerView savedGamesView = dialog.findViewById(R.id.saved_games_recycler_view_id);
+        SavedGamesAdapter savedGamesAdapter = new SavedGamesAdapter(dialog.getContext(), this.savedGames, this);
+        savedGamesView.setAdapter(savedGamesAdapter);
+        savedGamesView.setLayoutManager(new LinearLayoutManager(this));
+
+        dialog.show();
     }
 
     private void startNewGame(int players) {
@@ -96,4 +122,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    @Override
+    public void loadCurrGame(int position) {
+        Log.d("File Name", this.savedGames.get(position));
+    }
 }
