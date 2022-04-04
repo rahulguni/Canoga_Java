@@ -1,10 +1,20 @@
 package com.example.canoga.Model;
 
+import android.os.Build;
+import android.util.Log;
+
+import androidx.annotation.RequiresApi;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+
 public class Game {
     private Player player1, player2;
     private Board newBoard;
-    private Round newRound;
-    private Misc misc;
+    private Round newRound = new Round();
+    private Misc misc = new Misc();
 
     public Game(String player1, String player2, int boardSize) {
         this.player1 = new Human(player1);
@@ -15,23 +25,83 @@ public class Game {
             this.player2 = new Computer();
         }
         this.newBoard = new Board(boardSize);
-        this.newRound = new Round();
-        this.misc = new Misc();
     }
 
-    public Game(String fileName) {
-        String path = "/data/user/0/com.example.canoga/files/savedGames/" + fileName;
-        String gameData = "" ;
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public Game(String filePath) {
+        String gameData = "";
+        try {
+            gameData = new String(Files.readAllBytes(Paths.get(filePath)));
+            int index = gameData.indexOf("\n");
+            ArrayList<String> gameDataArrList = new ArrayList<>();
+            while(!gameData.isEmpty()) {
+                String currData = gameData.substring(0, index);
+                gameData = gameData.substring(index + 1);
+                index = gameData.indexOf("\n");
+                gameDataArrList.add(currData.trim());
+                if(index == -1) {
+                    break;
+                }
+            }
+
+            gameDataArrList = misc.removeEmptyLines(gameDataArrList);
+
+            //get first player
+            this.player1 = new Human(misc.getPlayerName(gameDataArrList.get(3)));
+            this.player1.updateScore(misc.getPlayerScore(gameDataArrList.get(5)));
+
+            //check if second player is human or computer
+            if(gameDataArrList.get(0).equals("Computer:")) {
+                this.player2 = new Computer();
+            }
+            else {
+                this.player2 = new Human(misc.getPlayerName(gameDataArrList.get(0)));
+            }
+            this.player2.updateScore(misc.getPlayerScore(gameDataArrList.get(2)));
+
+            boolean humanTurn = misc.compareTurns(gameDataArrList.get(3), gameDataArrList.get(7));
+            boolean humanGoesFirst = misc.compareTurns(gameDataArrList.get(3), gameDataArrList.get(6));
+
+            ArrayList<String> boardData = new ArrayList<>();
+            for(int i = 1; i <= 4; i += 3) {
+                String numbers = misc.fixStringForRead(gameDataArrList.get(i).substring(gameDataArrList.get(i).indexOf(":") + 2));
+                int newIndex = numbers.indexOf(" ");
+                while(!numbers.isEmpty()) {
+                    String currNum = numbers.substring(0, newIndex);
+                    numbers = numbers.substring(newIndex + 1);
+                    newIndex = numbers.indexOf(" ");
+                    boardData.add(currNum);
+                    if(newIndex == -1) {
+                        break;
+                    }
+                }
+            }
+
+            //Get Dice Rolls
+            ArrayList<String> diceInfo = new ArrayList<>();
+            for(int i = 9; i < gameDataArrList.size(); i++) {
+                String digits = "";
+                for(int j = 0; j < gameDataArrList.get(i).length(); j++) {
+                    if(gameDataArrList.get(i).charAt(j) != ' ') {
+                        digits += String.valueOf(gameDataArrList.get(i).charAt(j));
+                    }
+                }
+                diceInfo.add(digits);
+            }
+
+            //Get first Play
+            boolean firstPlay = false;
+            if(gameDataArrList.get(6).charAt(0) == 'f') {
+                firstPlay = true;
+            }
+
+            this.newBoard = new Board(boardData, diceInfo, misc.getGameNameFromPath(filePath), humanTurn, humanGoesFirst, firstPlay);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public String toString() {
-        return "Game{" +
-                "player1=" + player1 +
-                ", player2=" + player2 +
-                ", newBoard=" + newBoard +
-                '}';
-    }
 
     public boolean gameOver() {
         boolean gameOver = false;

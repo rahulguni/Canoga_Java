@@ -4,19 +4,24 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -48,13 +53,14 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
             R.drawable.dice4,
             R.drawable.dice5, R.drawable.dice6};
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_boardview);
         loadNewGame();
         setFields();
-        fillBoardDetails();
+        fillBoardDetails(false);
     }
 
     @Override
@@ -75,23 +81,27 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         return super.onOptionsItemSelected(item);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     void loadNewGame() {
-        String player1Name = getIntent().getExtras().getString("player1Name");
-        String player2Name = getIntent().getExtras().getString("player2Name");
-        int boardSize = Integer.valueOf(getIntent().getExtras().getString("boardSize"));
         if(getIntent().getExtras().get("gameMode").equals("newGame")) {
+            String player1Name = getIntent().getExtras().getString("player1Name");
+            String player2Name = getIntent().getExtras().getString("player2Name");
+            int boardSize = Integer.valueOf(getIntent().getExtras().getString("boardSize"));
             game = new Game(player1Name, player2Name, boardSize);
         }
         else {
             game = new Game(getIntent().getExtras().getString("fileName"));
         }
+
         board = game.getNewBoard();
     }
 
-    void fillBoardDetails() {
+    void fillBoardDetails(boolean forContinue) {
         player1info.setText(game.getPlayer1().getName() + ":  " + String.valueOf(game.getPlayer1().getScore()));
         player2info.setText(game.getPlayer2().getName() + ":  " + String.valueOf(game.getPlayer2().getScore()));
-        this.fillGameInfo("Press Start!");
+        if(!forContinue) {
+            this.fillGameInfo("Press Start!");
+        }
     }
 
     public void startNewGame(View v) {
@@ -99,14 +109,14 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         boolean gameBegin = false;
 
         if(this.startNewGameBtn.getText().equals("Start")) {
-            ArrayList<Integer> diceSum = this.game.getPlayer1().rollDice(true);
+            ArrayList<Integer> diceSum = this.game.getPlayer1().rollDice(this.board, true);
             this.viewDice(diceSum);
             currDiceRoll = misc.getDiceRollSum(diceSum);
             displayDiceRoll(this.game.getPlayer1().getName(), misc.getDiceRollSum(diceSum));
             this.startNewGameBtn.setText("Continue");
         }
         else if(this.startNewGameBtn.getText().equals("Continue")) {
-            ArrayList<Integer> diceSum = this.game.getPlayer2().rollDice(true);
+            ArrayList<Integer> diceSum = this.game.getPlayer2().rollDice(this.board,true);
             this.viewDice(diceSum);
             displayDiceRoll(this.game.getPlayer2().getName(), misc.getDiceRollSum(diceSum));
             int anotherDice = misc.getDiceRollSum(diceSum);
@@ -271,36 +281,42 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
     private void rollDice() {
         this.fillGameInfo("Rolling dice for " + currPlayer.getName());
         if(this.currPlayer instanceof Computer) {
-            ArrayList<Integer> currDiceCombo = this.currPlayer.rollDice(!this.currPlayer.oneDicePossible(this.board));
+            ArrayList<Integer> currDiceCombo = this.currPlayer.rollDice(this.board, !this.currPlayer.oneDicePossible(this.board));
             rollDiceHelper(currDiceCombo);
             this.helpBtn.setText("Computer Steps");
         }
         else {
-            if(this.currPlayer.oneDicePossible(this.board)) {
-                AlertDialog.Builder alert = new AlertDialog.Builder(this);
-                alert.setTitle("One Dice Roll");
-                alert.setMessage("You have the option to roll only one die. Do you want to roll only one dice?");
-                alert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        ArrayList<Integer> currDiceCombo = currPlayer.rollDice(false);
-                        rollDiceHelper(currDiceCombo);
-                    }
-                });
-                alert.setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        ArrayList<Integer> currDiceCombo = currPlayer.rollDice(true);
-                        rollDiceHelper(currDiceCombo);
-                    }
-                });
+            if(this.board.getDiceCombinations().isEmpty()) {
+                if(this.currPlayer.oneDicePossible(this.board)) {
+                    AlertDialog.Builder alert = new AlertDialog.Builder(this);
+                    alert.setTitle("One Dice Roll");
+                    alert.setMessage("You have the option to roll only one die. Do you want to roll only one dice?");
+                    alert.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            ArrayList<Integer> currDiceCombo = currPlayer.rollDice(board, false);
+                            rollDiceHelper(currDiceCombo);
+                        }
+                    });
+                    alert.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            ArrayList<Integer> currDiceCombo = currPlayer.rollDice(board,true);
+                            rollDiceHelper(currDiceCombo);
+                        }
+                    });
 
-                AlertDialog alertDialog = alert.create();
-                alertDialog.setCancelable(false);
-                alertDialog.show();
+                    AlertDialog alertDialog = alert.create();
+                    alertDialog.setCancelable(false);
+                    alertDialog.show();
+                }
+                else {
+                    ArrayList<Integer> currDiceCombo = currPlayer.rollDice(board, true);
+                    rollDiceHelper(currDiceCombo);
+                }
             }
             else {
-                ArrayList<Integer> currDiceCombo = currPlayer.rollDice(true);
+                ArrayList<Integer> currDiceCombo = currPlayer.rollDice(board, true);
                 rollDiceHelper(currDiceCombo);
             }
             this.helpBtn.setText("Help");
@@ -369,11 +385,49 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         continueGameBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                gameInfo.setText(game.continueGame(roundScore, board.getBoardSize()));
-                humanBoardAdapter.notifyDataSetChanged();
-                computerBoardAdapter.notifyDataSetChanged();
-                dialog.cancel();
-                resetButtonsForNewGame();
+
+                final Dialog nDialog = new Dialog(BoardView.this);
+                nDialog.setCancelable(false);
+                nDialog.setContentView(R.layout.start_game_dialog);
+                //Initializing the views of the dialog
+                final TextView boardSizeTextView = nDialog.findViewById(R.id.board_size_text_id);
+                final EditText player1Name = nDialog.findViewById(R.id.player1_name_id);
+                final EditText player2Name = nDialog.findViewById(R.id.player2_name_id);
+                final Spinner boardSizeSpinner = nDialog.findViewById(R.id.boardSize_spinner_id);
+
+                player1Name.setText(game.getPlayer1().getName());
+                player2Name.setText(game.getPlayer2().getName());
+                player1Name.setEnabled(false);
+                player2Name.setEnabled(false);
+
+                boardSizeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                        boardSizeTextView.setText(String.valueOf(9 + i));
+                        board.setBoardSize(9 + i);
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> adapterView) {
+
+                    }
+                });
+                final Button beginGameBtn = nDialog.findViewById(R.id.beginGame_btn);
+
+                beginGameBtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        fillGameInfo(game.continueGame(roundScore, board.getBoardSize()));
+                        humanBoardAdapter.notifyDataSetChanged();
+                        computerBoardAdapter.notifyDataSetChanged();
+                        dialog.cancel();
+                        nDialog.cancel();
+                        resetButtonsForNewGame();
+                        fillBoardDetails(true);
+                    }
+                });
+
+                nDialog.show();
             }
         });
 
@@ -420,6 +474,17 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         computerBoard.setLayoutManager(new LinearLayoutManager(this));
         enableHelpButtons(false, false);
         gameInfo.setMovementMethod(new ScrollingMovementMethod());
+
+        if(getIntent().getExtras().get("gameMode").equals("resumeGame")) {
+            displayTurns();
+            this.startNewGameBtn.setEnabled(false);
+            this.startNewGameBtn.setVisibility(View.INVISIBLE);
+            this.rollDiceBtn.setEnabled(true);
+            this.rollDiceBtn.setVisibility(View.VISIBLE);
+            this.currPlayer = misc.getCurrentPlayer(game, board);
+            this.helpBtn.setVisibility(View.VISIBLE);
+            this.viewMovesBtn.setVisibility(View.VISIBLE);
+        }
     }
 
     private void viewDice(ArrayList<Integer> dice) {
@@ -469,7 +534,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
     }
     private void displayNoMove() {
         Toast toast = new Toast(this);
-        toast.setText("Cannot " + ((!currPlayer.getCoverChoice()) ? "cover your" : "uncover opponent's ") + " tile with the current dice roll.");
+        toast.setText("Cannot " + ((currPlayer.getCoverChoice()) ? "cover your" : "uncover opponent's ") + " tile with the current dice roll.");
         toast.show();
     }
 
@@ -519,7 +584,12 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         String message = this.game.getPlayer1() + "\n" + this.game.getPlayer2() + "\n";
         if(gameEnd) {
             builder.setCancelable(false);
-            message += "Winner: " + this.game.getWinner();
+            if(this.game.getWinner() != null) {
+                message += "Winner: " + this.game.getWinner().getName();
+            }
+            else {
+                message += "Game ended in a draw!";
+            }
             builder.setPositiveButton("End Game", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
@@ -564,10 +634,42 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
 
     public void saveGameClicked() throws IOException {
         if(this.board.getSavedGameName().equals("Null00")) {
+            final Dialog dialog = new Dialog(this);
+            dialog.setCancelable(true);
+            dialog.setContentView(R.layout.save_game_dialog);
 
+            final EditText gameName = dialog.findViewById(R.id.game_name_text_id);
+            final Button saveGameButton = dialog.findViewById(R.id.save_game_btn_id);
+
+            saveGameButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    ArrayList allFiles = misc.gameNames(BoardView.this);
+                    if(!allFiles.contains(gameName.getText().toString())) {
+                        board.setSavedGameName(gameName.getText().toString());
+                        try {
+                            currPlayer.saveCurrentGame(BoardView.this, board, game.getPlayer1(), game.getPlayer2(), gameName.getText().toString());
+                            Intent intent = new Intent(dialog.getContext(), MainActivity.class);
+                            startActivity(intent);
+                            finish();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    else {
+                        Toast toast = new Toast(BoardView.this);
+                        toast.setText("A game with this name already exists. Please try a different name.");
+                        toast.show();
+                    }
+                }
+            });
+            dialog.show();
         }
         else {
-            this.currPlayer.saveCurrentGame(this, this.board, this.currPlayer, misc.getOpponentPlayer(this.game, this.currPlayer), board.getSavedGameName());
+            this.currPlayer.saveCurrentGame(this, this.board, game.getPlayer1(), game.getPlayer2(), board.getSavedGameName());
+            Intent intent = new Intent(this, MainActivity.class);
+            startActivity(intent);
+            finish();
         }
     }
 

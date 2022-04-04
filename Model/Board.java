@@ -8,7 +8,7 @@ public class Board {
     private int boardSize;
     private ArrayList<Boolean> humanBoard, computerBoard;
     private boolean firstPlay, humanTurn, humanGoesFirst;
-    private ArrayList<Integer> diceCombinations;
+    private ArrayList<Integer> diceCombinations = new ArrayList<>();
     String savedGameName;
 
     public Board(int boardSize) {
@@ -17,8 +17,7 @@ public class Board {
         this.computerBoard = new ArrayList<>(boardSize);
         this.firstPlay = true;
         this.humanTurn = true;
-        this.diceCombinations = new ArrayList<>();
-        this.savedGameName = "Test";
+        this.savedGameName = "Null00";
 
        refreshBoard(this.boardSize);
 
@@ -58,6 +57,7 @@ public class Board {
                 this.humanBoard.set(i - boardSize, false);
             }
         }
+
     }
 
     public void refreshBoard(int boardSize) {
@@ -141,6 +141,22 @@ public class Board {
         this.boardSize = boardSize;
         this.firstPlay = true;
 
+        //Add new tiles according to board size
+        for(int i = 0; i < boardSize; i++) {
+            if(i >= this.humanBoard.size()) {
+                this.humanBoard.add(false);
+                this.computerBoard.add(false);
+            }
+        }
+
+        //Remove tiles according to board size
+        if(boardSize < this.humanBoard.size()) {
+            for(int i = boardSize; i < this.humanBoard.size(); i++) {
+                this.humanBoard.remove(i);
+                this.computerBoard.remove(i);
+            }
+        }
+
         for(int i = 0; i < boardSize; i++) {
             this.humanBoard.set(i, false);
             this.computerBoard.set(i, false);
@@ -174,10 +190,8 @@ public class Board {
 
     public int getLoadedDice() {
         int firstNum = this.diceCombinations.get(0);
-        int secondNum = this.diceCombinations.get(1);
         this.diceCombinations.remove(0);
-        this.diceCombinations.remove(0);
-        return firstNum + secondNum;
+        return firstNum;
     }
 
     @Override

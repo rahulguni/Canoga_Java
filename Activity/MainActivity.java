@@ -55,13 +55,7 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
     }
 
     public void resumeGameOptions(View v) {
-        File file = new File(String.valueOf(this.getFilesDir()) + "/savedGames");
-        String[] savedFiles;
-        savedFiles = file.list();
-
-        for(int i = 0; i < savedFiles.length; i++) {
-            this.savedGames.add(misc.extractGameName(savedFiles[i]));
-        }
+        this.savedGames = misc.gameNames(this);
 
         final Dialog dialog = new Dialog(this);
         dialog.setCancelable(true);
@@ -104,12 +98,14 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         beginGameBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                bundle.putString("player1Name", player1Name.getText().toString());
-                bundle.putString("player2Name", player2Name.getText().toString());
-                bundle.putString("boardSize", String.valueOf(boardSizeSpinner.getSelectedItemPosition() + 9));
-                bundle.putString("gameMode", "newGame");
-                intent.putExtras(bundle);
-                startActivity(intent);
+                if(misc.checkPlayerName(player1Name.getText().toString())) {
+                    bundle.putString("player1Name", player1Name.getText().toString());
+                    bundle.putString("player2Name", player2Name.getText().toString());
+                    bundle.putString("boardSize", String.valueOf(boardSizeSpinner.getSelectedItemPosition() + 9));
+                    bundle.putString("gameMode", "newGame");
+                    intent.putExtras(bundle);
+                    startActivity(intent);
+                }
             }
         });
 
@@ -124,6 +120,11 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
 
     @Override
     public void loadCurrGame(int position) {
-        Log.d("File Name", this.savedGames.get(position));
+        Intent intent = new Intent(this, BoardView.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("gameMode", "resumeGame");
+        bundle.putString("fileName", this.getFilesDir() + "/savedGames/" + this.savedGames.get(position) + ".txt");
+        intent.putExtras(bundle);
+        startActivity(intent);
     }
 }

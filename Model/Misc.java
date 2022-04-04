@@ -8,6 +8,7 @@ import android.widget.EditText;
 
 import androidx.appcompat.app.AlertDialog;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,19 +54,21 @@ public class Misc {
         return opponent;
     }
 
-    public Player getOpponentPlayer(Game game, Player player) {
-        if(game.getPlayer1().getName().equals(player.getName())) {
-            return game.getPlayer2();
-        }
-        return game.getPlayer1();
-    }
-
     public Player switchPlayer(Game game, Player player) {
         if(player.equals(game.getPlayer1())) {
             return game.getPlayer2();
         }
         else {
             return game.getPlayer1();
+        }
+    }
+
+    public Player getCurrentPlayer(Game game, Board board) {
+        if(board.isHumanTurn()) {
+            return game.getPlayer1();
+        }
+        else {
+            return game.getPlayer2();
         }
     }
 
@@ -147,6 +150,67 @@ public class Misc {
 
     public String extractGameName(String gameName) {
         return gameName.substring(0, gameName.length() - 4);
+    }
+
+    public ArrayList<String> gameNames(Context context) {
+        Log.d("TAG", context.getFilesDir().toString());
+        ArrayList<String> allFiles = new ArrayList<>();
+        File file = new File(String.valueOf(context.getFilesDir()) + "/savedGames");
+        String[] savedFiles;
+        savedFiles = file.list();
+
+        if(savedFiles != null) {
+            for(int i = 0; i < savedFiles.length; i++) {
+                allFiles.add(this.extractGameName(savedFiles[i]));
+            }
+        }
+
+        return allFiles;
+    }
+
+    public boolean checkPlayerName(String name) {
+        if(name.equals("Computer") || name.equals("computer")) {
+            return false;
+        }
+        return true;
+    }
+
+    public ArrayList<String> removeEmptyLines(ArrayList<String> gameDataVec) {
+        for(int i = gameDataVec.size() - 1; i >=0; i--) {
+            if(gameDataVec.get(i).equals(" ") || gameDataVec.get(i).equals("\n") || gameDataVec.get(i).length() < 1) {
+                gameDataVec.remove(i);
+            }
+        }
+        return gameDataVec;
+    }
+
+    public String fixStringForRead(String data) {
+        return data + " ";
+    }
+
+    public String getPlayerName(String name) {
+        return name.substring(0, name.length() - 1);
+    }
+
+    public int getPlayerScore(String score) {
+        int index = score.indexOf(':');
+        String scoreStr = score.substring(index + 2);
+        return Integer.parseInt(scoreStr);
+    }
+
+    public boolean compareTurns(String playerName, String turnName) {
+        String player1Name, nextTurn;
+        player1Name = playerName.substring(0, playerName.length() - 1);
+        nextTurn = turnName.substring(turnName.indexOf(":") + 2);
+        if(player1Name.equals(nextTurn)) {
+            return true;
+        }
+        return false;
+    }
+
+    public String getGameNameFromPath(String path) {
+        File file = new File(path);
+        return file.getName().substring(0, file.getName().length() - 4);
     }
 
 }

@@ -47,19 +47,26 @@ public abstract class Player {
         this.possibleTiles = possibleTiles;
     }
 
-    public ArrayList<Integer> rollDice(boolean twoDice) {
+    public ArrayList<Integer> rollDice(Board board, boolean twoDice) {
         ArrayList<Integer> diceSum = new ArrayList<>();
-
         int diceOne, diceTwo;
 
-        Random random = new Random();
-        diceOne = random.nextInt(6) + 1;
-        if(twoDice) {
-            diceTwo = random.nextInt(6) + 1;
+        if(board.getDiceCombinations().size() >= 2) {
+            diceOne = board.getLoadedDice();
+            diceTwo = board.getLoadedDice();
         }
+
         else {
-            diceTwo = 0;
+            Random random = new Random();
+            diceOne = random.nextInt(6) + 1;
+            if(twoDice) {
+                diceTwo = random.nextInt(6) + 1;
+            }
+            else {
+                diceTwo = 0;
+            }
         }
+
         diceSum.add(diceOne);
         diceSum.add(diceTwo);
 
