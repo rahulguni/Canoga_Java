@@ -73,12 +73,52 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        try {
-            saveGameClicked();
-        } catch (IOException e) {
-            e.printStackTrace();
+        if(item.getTitle().equals("Save Game")) {
+            try {
+                saveGameClicked();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            final Dialog dialog = new Dialog(this);
+            dialog.setCancelable(true);
+            dialog.setContentView(R.layout.help_dialog);
+            dialog.show();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+
+
+    @Override
+    public void onBackPressed() {
+        Log.d("TAG", "onBackPressed: ");
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setTitle("Quit Game");
+        alert.setMessage("Do you want to quit game without saving?");
+        alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                try {
+                    saveGameClicked();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        alert.setNegativeButton("Quit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                endGame();
+            }
+        });
+
+        AlertDialog alertDialog = alert.create();
+        alertDialog.setCancelable(true);
+        alertDialog.show();
+
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -593,9 +633,7 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
             builder.setPositiveButton("End Game", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    Intent intent = new Intent(builder.getContext(), MainActivity.class);
-                    startActivity(intent);
-                    finish();
+                    endGame();
                 }
             });
         }
@@ -646,14 +684,19 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
                 public void onClick(View view) {
                     ArrayList allFiles = misc.gameNames(BoardView.this);
                     if(!allFiles.contains(gameName.getText().toString())) {
-                        board.setSavedGameName(gameName.getText().toString());
-                        try {
-                            currPlayer.saveCurrentGame(BoardView.this, board, game.getPlayer1(), game.getPlayer2(), gameName.getText().toString());
-                            Intent intent = new Intent(dialog.getContext(), MainActivity.class);
-                            startActivity(intent);
-                            finish();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        if(misc.checkSaveGameName(gameName.getText().toString())) {
+                            board.setSavedGameName(gameName.getText().toString());
+                            try {
+                                currPlayer.saveCurrentGame(BoardView.this, board, game.getPlayer1(), game.getPlayer2(), gameName.getText().toString());
+                                endGame();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        else {
+                            Toast toast = new Toast(BoardView.this);
+                            toast.setText("Game name cannot contain a space.");
+                            toast.show();
                         }
                     }
                     else {
@@ -667,10 +710,14 @@ public class BoardView extends AppCompatActivity implements BoardCustomAdapter.O
         }
         else {
             this.currPlayer.saveCurrentGame(this, this.board, game.getPlayer1(), game.getPlayer2(), board.getSavedGameName());
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
-            finish();
+            endGame();
         }
+    }
+
+    public void endGame() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
     }
 
 }

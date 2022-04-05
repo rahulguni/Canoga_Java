@@ -17,6 +17,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.canoga.Adapters.SavedGamesAdapter;
 import com.example.canoga.Model.Game;
@@ -105,6 +106,11 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
                     bundle.putString("gameMode", "newGame");
                     intent.putExtras(bundle);
                     startActivity(intent);
+                }
+                else {
+                    Toast toast = new Toast(dialog.getContext());
+                    toast.setText("Invalid Player Name");
+                    toast.show();
                 }
             }
         });

@@ -152,6 +152,13 @@ public class Misc {
         return gameName.substring(0, gameName.length() - 4);
     }
 
+    public boolean checkSaveGameName(String gameName) {
+        if(gameName.length() >= 1 && !gameName.contains(" ")) {
+            return true;
+        }
+        return false;
+    }
+
     public ArrayList<String> gameNames(Context context) {
         Log.d("TAG", context.getFilesDir().toString());
         ArrayList<String> allFiles = new ArrayList<>();
@@ -169,7 +176,7 @@ public class Misc {
     }
 
     public boolean checkPlayerName(String name) {
-        if(name.equals("Computer") || name.equals("computer")) {
+        if(name.equals("Computer") || name.equals("computer") || name.equals("")) {
             return false;
         }
         return true;
@@ -212,5 +219,6 @@ public class Misc {
         File file = new File(path);
         return file.getName().substring(0, file.getName().length() - 4);
     }
+
 
 }
