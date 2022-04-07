@@ -31,8 +31,19 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements SavedGamesAdapter.OnSaveGameClickListener {
     Button startGame, resumeGame;
+    //ArrayList of Strings that will contain all saved file names
     ArrayList<String> savedGames = new ArrayList<>();
+    //helper function
     Misc misc = new Misc();
+
+    /*
+    Function Name: onCreate
+    Purpose: Assign Buttons to ids.
+    Parameters: None
+    Return Value: None
+    Algorithm: None
+    Assistance Received: None
+    */
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +52,36 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         startGame = findViewById(R.id.startGameBtn);
         resumeGame = findViewById(R.id.resumeGameBtn);
     }
+
+    /*
+    Function Name: loadCurrGame
+    Purpose: Load new game and display screen contents
+    Parameters:
+        position: Integer index of savedGames arraylist for recyclerView.
+    Return Value: None
+    Algorithm:
+            1. Migrate to BoardView Class with necessary bundle.
+    Assistance Received: None
+    */
+
+    @Override
+    public void loadCurrGame(int position) {
+        Intent intent = new Intent(this, BoardView.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("gameMode", "resumeGame");
+        bundle.putString("fileName", this.getFilesDir() + "/savedGames/" + this.savedGames.get(position) + ".txt");
+        intent.putExtras(bundle);
+        startActivity(intent);
+    }
+
+    /*
+    Function Name: newGameOptions
+    Purpose: Present option to play human vs human or human vs computer
+    Parameters: None
+    Return Value: None
+    Algorithm: None
+    Assistance Received: None
+    */
 
     public void newGameOptions(View v) {
         String[] option = {"Player vs Computer", "Player vs Player"};
@@ -54,6 +95,16 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         });
         builder.show();
     }
+
+    /*
+    Function Name: resumeGameOptions
+    Purpose: Present dialog that has all saved files for game.
+    Parameters: None
+    Return Value: None
+    Algorithm:
+            1. Migrate to BoardView activity that initializes the game object with fileName from savedFiles.
+    Assistance Received: None
+    */
 
     public void resumeGameOptions(View v) {
         this.savedGames = misc.gameNames(this);
@@ -70,11 +121,25 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         dialog.show();
     }
 
+    /*
+    Function Name: startNewGame
+    Purpose: Present a dialog and migrate to  BoardView class with necessary information.
+    Parameters:
+        players:- integer that determines if two humans are playing or one.
+    Return Value: None
+    Algorithm:
+            1. Display dialog that has player name fields and board size spinner.
+            2. Start activity with intent and bundle with data from dialog box.
+    Assistance Received: None
+    */
+
     private void startNewGame(int players) {
+        //Dialog box
         final Dialog dialog = new Dialog(this);
         dialog.setCancelable(true);
         dialog.setContentView(R.layout.start_game_dialog);
 
+        //Intent for BoardView Class
         Intent intent = new Intent(this, BoardView.class);
         Bundle bundle = new Bundle();
 
@@ -83,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         final EditText player1Name = dialog.findViewById(R.id.player1_name_id);
         final EditText player2Name = dialog.findViewById(R.id.player2_name_id);
         final Spinner boardSizeSpinner = dialog.findViewById(R.id.boardSize_spinner_id);
+        //change board size text when spinner is changed.
         boardSizeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -96,6 +162,7 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         });
         final Button beginGameBtn = dialog.findViewById(R.id.beginGame_btn);
 
+        //begin game button
         beginGameBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -123,14 +190,4 @@ public class MainActivity extends AppCompatActivity implements SavedGamesAdapter
         dialog.show();
     }
 
-
-    @Override
-    public void loadCurrGame(int position) {
-        Intent intent = new Intent(this, BoardView.class);
-        Bundle bundle = new Bundle();
-        bundle.putString("gameMode", "resumeGame");
-        bundle.putString("fileName", this.getFilesDir() + "/savedGames/" + this.savedGames.get(position) + ".txt");
-        intent.putExtras(bundle);
-        startActivity(intent);
-    }
 }
